@@ -45,14 +45,27 @@ object BuildWatermark {
                 val decor = activity.window.decorView as? ViewGroup ?: return
                 if (decor.findViewWithTag<View>(TAG) != null) return
                 val margin = (8 * activity.resources.displayMetrics.density).toInt()
-                decor.addView(
-                    MarkView(activity, lines).apply { tag = TAG },
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        Gravity.BOTTOM or Gravity.END,
-                    ).apply { setMargins(margin, margin, margin, margin) },
-                )
+                val mark = MarkView(activity, lines).apply { tag = TAG }
+                val lp = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.BOTTOM or Gravity.END,
+                ).apply { setMargins(margin, margin, margin, margin) }
+                decor.addView(mark, lp)
+                // Rounded screen corners clip the last characters: keep the mark clear of the bottom-end corner.
+                val density = activity.resources.displayMetrics.density
+                decor.setOnApplyWindowInsetsListener { v, insets ->
+                    val (end, bottom) = cornerInset(v, insets, density)
+                    val newEnd = margin + end
+                    val newBottom = margin + bottom
+                    if (lp.rightMargin != newEnd || lp.bottomMargin != newBottom) {
+                        lp.rightMargin = newEnd
+                        lp.bottomMargin = newBottom
+                        mark.layoutParams = lp
+                    }
+                    v.onApplyWindowInsets(insets)
+                }
+                decor.requestApplyInsets()
             }
 
             override fun onActivityStarted(activity: Activity) = Unit
@@ -65,6 +78,26 @@ object BuildWatermark {
     }
 
     private const val TAG = "build-watermark"
+
+    private const val FALLBACK_CORNER_DP = 24f
+
+    /** Extra (end, bottom) padding in px so the mark clears the bottom-end rounded corner. */
+    private fun cornerInset(view: View, insets: android.view.WindowInsets, density: Float): Pair<Int, Int> {
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            val corner = insets.getRoundedCorner(
+                if (view.layoutDirection == View.LAYOUT_DIRECTION_RTL) android.view.RoundedCorner.POSITION_BOTTOM_LEFT
+                else android.view.RoundedCorner.POSITION_BOTTOM_RIGHT,
+            )
+            if (corner != null) {
+                // Text anchored r*(1-cos45°)≈0.3r from the edges already touches the arc; 0.7r inset keeps the whole box inside it.
+                val shift = (corner.radius * 0.7f).toInt()
+                return shift to shift
+            }
+            return 0 to 0
+        }
+        val fallback = (FALLBACK_CORNER_DP * density).toInt()
+        return fallback to fallback
+    }
 
     private class MarkView(context: Context, private val lines: List<String>) : View(context) {
         private var shown = lines
