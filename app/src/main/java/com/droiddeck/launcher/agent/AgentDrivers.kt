@@ -2,6 +2,7 @@ package com.droiddeck.launcher.agent
 
 import android.content.Context
 import android.net.Uri
+import com.droiddeck.launcher.gpu.DriverPreset
 import com.droiddeck.launcher.gpu.DriverSelector
 import com.droiddeck.launcher.gpu.LinuxVulkanDriverManager
 import com.droiddeck.launcher.session.SessionPrefs
@@ -21,6 +22,7 @@ object AgentDrivers {
         val list = installed(m)
         return JSONObject()
             .put("active", DriverSelector.active(SessionPrefs.linuxDriver(context), list).wire)
+            .put("preset", DriverPreset.active(context).wire)
             .put("linuxDriver", SessionPrefs.linuxDriver(context))
             .put("maliOpen", JSONArray(list.filter(DriverSelector::isMaliOpen).map { it.id }))
             .put("installed", JSONArray(list.map { JSONObject().put("id", it.id).put("name", it.name) }))
@@ -60,5 +62,10 @@ object AgentDrivers {
         plan.linuxDriver?.let { SessionPrefs.setLinuxDriver(context, it) }
         // MaliBridge is the default: it is on again whenever Mali-open is not selected (DeviceSupport.vkBridge turns it off for Mali-open).
         SessionPrefs.setVkBridge(context, true)
+        // Keep the session-start preset in step, or DriverPreset.enforce() would undo this choice.
+        DriverPreset.apply(
+            context,
+            if (choice == DriverSelector.Choice.MALI_OPEN) DriverPreset.Preset.MALI_OPEN else DriverPreset.Preset.MALIBRIDGE,
+        )
     }
 }

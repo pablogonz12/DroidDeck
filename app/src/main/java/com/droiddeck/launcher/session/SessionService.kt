@@ -856,6 +856,8 @@ class SessionService : Service() {
     }
 
     private fun addClientEnvironment(guest: MutableList<String>, steamHere: Boolean, agentEnvironment: List<String>) {
+        // The two-way preset owns the driver choice: re-resolve it so the env below is exactly MaliBridge or mali-open.
+        com.droiddeck.launcher.gpu.DriverPreset.enforce(this)
         guest.add("/usr/bin/env")
         guest.add("-i")
         guest.add("DROIDDECK_BWRAP_SOCKET=" + com.droiddeck.launcher.runtime.BwrapSpawner.socket(this))
@@ -986,6 +988,8 @@ class SessionService : Service() {
         bridge.attach(this)
         components.add(bridge)
         guest.add("BL_VKBRIDGE=1")
+        // MENUBENCH.md: the Steam UI needs ANGLE on Vulkan *with* Vulkan compositing (7 fps without on the X8, 105-120 with).
+        guest.add("BL_VKBRIDGE_CEF_VULKAN=1")
         if (SessionPrefs.steamGpuCompositing(this)) guest.add("BL_STEAM_GPU_COMPOSITING=1")
         SessionPrefs.linuxDriver(this).takeIf { it.isNotEmpty() }
             ?.let { runCatching { LinuxVulkanDriver.resolveIcdPath(this, it) }.getOrNull() }

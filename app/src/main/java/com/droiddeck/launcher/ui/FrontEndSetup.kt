@@ -273,18 +273,6 @@ internal fun SetupPanel(
                                     else stringResource(R.string.setup_gpu_unsupported_detail, gpuName)
                                 },
                                 divider = divider || bridgeModeRow,
-                                action = if (s.adreno) null else { {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        SecondaryButton(
-                                            stringResource(if (s.venus) R.string.setup_gpu_venus_on else R.string.setup_gpu_venus_off),
-                                            enabled = !s.sessionRunning, compact = true, onClick = { a.onVenus(!s.venus) },
-                                        )
-                                        SecondaryButton(
-                                            stringResource(if (s.vkBridge) R.string.setup_gpu_bridge_on else R.string.setup_gpu_bridge_off),
-                                            enabled = !s.sessionRunning, compact = true, onClick = { a.onVkBridge(!s.vkBridge) },
-                                        )
-                                    }
-                                } },
                             )
                             if (bridgeModeRow) CheckRow(
                                 CheckState.OK,
@@ -310,8 +298,8 @@ internal fun SetupPanel(
                                     )
                                 },
                             )
-                            // MaliBridge (default) or Mali-open; not gated on s.vkBridge, which is false while Mali-open is selected
-                            if (!s.adreno && com.droiddeck.launcher.core.DeviceSupport.mali() && !s.sessionRunning) com.droiddeck.launcher.gpu.DriverChoiceRow()
+                            // MaliBridge (default) or mali-open; not gated on s.vkBridge, which is false while mali-open is selected
+                            if (!s.adreno && com.droiddeck.launcher.core.DeviceSupport.mali() && !s.sessionRunning) DriverPresetRow()
                         }
                         val runtimeCheck: @Composable (Boolean) -> Unit = { divider ->
                             CheckRow(

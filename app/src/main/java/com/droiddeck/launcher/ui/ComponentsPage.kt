@@ -665,8 +665,8 @@ fun ComponentsPage(
     val detail: @Composable (String, Boolean) -> Unit = { l, narrowPage ->
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val single = narrowPage || maxWidth < 600.dp
-        if (l == GPU_TAB) GpuDriversBody(gpu, gpuActions, single, firstRow, slotFocus) { slot, at ->
-            driverFrom = Origin(at.translate(-pageAt), 10f * density.density); driverPage = slot
+        if (l == GPU_TAB) Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 12.dp)) {
+            DriverPresetBody(onImport = gpuActions.onImportZip)
         }
         else Column(Modifier.fillMaxSize()) {
             AnimatedContent(l, transitionSpec = { fadeIn(Motion.tw(240)) togetherWith fadeOut(Motion.tw(160)) }, label = "inUse") { k -> bar(k) }
@@ -983,7 +983,7 @@ private fun availableRows(l: String, catalog: List<CatalogItem>, snapshot: Snaps
 
 @Composable
 private fun LayerTitle(l: String): String = when (l) {
-    GPU_TAB -> stringResource(R.string.comp_gpu_drivers)
+    GPU_TAB -> stringResource(R.string.comp_vulkan_preset)
     PROTON_TAB -> stringResource(R.string.comp_proton)
     else -> ComponentsManager.LABEL[l] ?: l
 }

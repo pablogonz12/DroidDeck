@@ -495,6 +495,13 @@ object SessionPrefs {
         prefs(context).edit().putString("linuxDriver", id).apply()
     }
 
+    /** The user-facing preset: `malibridge` (default) or `mali-open`; see gpu.DriverPreset. */
+    fun driverPreset(context: Context): String? = prefs(context).getString("driverPreset", null)
+
+    fun setDriverPreset(context: Context, wire: String) {
+        prefs(context).edit().putString("driverPreset", wire).commit()
+    }
+
     const val GPU_DRIVERS_AUTO = "auto"
     const val GPU_DRIVERS_MANUAL = "manual"
     const val GPU_DRIVERS_MIX = "mix"
