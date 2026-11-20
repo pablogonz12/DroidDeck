@@ -696,7 +696,7 @@ class SessionService : Service() {
         } else null
 
         val command = LinuxRuntime.command(
-            this, sessionRoot, runtimeDir, Environment.getExternalStorageDirectory(), binds, guest,
+            this, sessionRoot, runtimeDir, Environment.getExternalStorageDirectory(), binds, exportedEnv(guest),
         )
 
         val hostEnv = HostEnvironment()
@@ -714,7 +714,7 @@ class SessionService : Service() {
         if (prootLibs.isNotEmpty()) hostEnv["LD_LIBRARY_PATH"] = prootLibs
 
         val terminalCommand = LinuxRuntime.command(
-            this, sessionRoot, runtimeDir, Environment.getExternalStorageDirectory(), binds, shellGuest,
+            this, sessionRoot, runtimeDir, Environment.getExternalStorageDirectory(), binds, exportedEnv(shellGuest),
         )
         val terminalHostEnvironment = LinkedHashMap(System.getenv())
         hostEnv.asArray().forEach { entry ->
@@ -724,7 +724,7 @@ class SessionService : Service() {
         if (gen == sessionGen && SessionState.running) {
             SessionTerminal.prepare(terminalCommand, terminalHostEnvironment.map { (key, value) -> "$key=$value" }.toTypedArray(), root, gen)
             val (fastPathName, _) = ProotFastPath.hostEnv("")
-            BottomDesktop.prepare(desktopGuest, binds, sessionRoot,
+            BottomDesktop.prepare(exportedEnv(desktopGuest), binds, sessionRoot,
                 hostEnv.asArray().filterNot { it.startsWith("$fastPathName=") }.toTypedArray(), root, sessionDir, gen,
             ) { gen == sessionGen && SessionState.running }
         }
@@ -867,6 +867,22 @@ class SessionService : Service() {
         val game = if (SessionState.mode == MODE_RUN) SessionState.program?.let { "program:$it" }
             else SessionState.gameId?.toLongOrNull()?.toString()
         return com.droiddeck.launcher.input.GesturePrefs.read(this, game).relativeMouseMode
+    }
+
+    private val guestEnvAssignment = Regex("""[A-Za-z_][A-Za-z0-9_]*=.*""")
+
+    /**
+     * PRoot's link2symlink points /usr/bin/env at a `.l2s.env….` stub, and the rootfs's uutils multicall
+     * refuses to run under a name it does not recognise ("Requested utility `env` does not match executable
+     * name"), so the guest died on its first exec. Export the same assignments from the shell instead.
+     */
+    internal fun exportedEnv(argv: List<String>): List<String> {
+        if (argv.size < 3 || argv[0] != "/usr/bin/env" || argv[1] != "-i") return argv
+        val rest = argv.drop(2)
+        val commandAt = rest.indexOfFirst { !guestEnvAssignment.matches(it) }
+        if (commandAt <= 0) return argv
+        val assignments = rest.take(commandAt).joinToString(" ") { "'" + it.replace("'", "'\\''") + "'" }
+        return listOf("/bin/sh", "-c", "export $assignments; exec \"\$@\"", "droiddeck-session") + rest.drop(commandAt)
     }
 
     private fun addClientEnvironment(guest: MutableList<String>, steamHere: Boolean, agentEnvironment: List<String>) {        // The two-way preset owns the driver choice: re-resolve it so the env below is exactly MaliBridge or mali-open.
