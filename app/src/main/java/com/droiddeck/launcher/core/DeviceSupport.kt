@@ -17,9 +17,15 @@ object DeviceSupport {
 
     internal fun graphicsAvailable(adreno: Boolean, powerVrReady: Boolean): Boolean = adreno || powerVrReady
 
+    /** The own open driver ("Mali-open" zip) replaces MaliBridge: selecting it as the Linux driver switches the bridge off. */
+    fun maliOpenSelected(context: Context): Boolean {
+        val id = com.droiddeck.launcher.session.SessionPrefs.linuxDriver(context).ifEmpty { return false }
+        return com.droiddeck.launcher.gpu.LinuxVulkanDriverManager(context).isMaliOpen(id)
+    }
+
     fun vkBridge(context: Context): Boolean =
         bridgeUsable() && !com.droiddeck.launcher.session.VenusComponent.wanted(context) &&
-            com.droiddeck.launcher.session.SessionPrefs.vkBridge(context)
+            !maliOpenSelected(context) && com.droiddeck.launcher.session.SessionPrefs.vkBridge(context)
 
     fun mali(): Boolean = isMali
 
@@ -33,8 +39,9 @@ object DeviceSupport {
     fun openDriverActive(context: Context): Boolean {
         if (adreno()) return false
         if (com.droiddeck.launcher.session.VenusComponent.wanted(context)) return false
-        if (bridgeUsable() && com.droiddeck.launcher.session.SessionPrefs.vkBridge(context)) return false
+        if (bridgeUsable() && com.droiddeck.launcher.session.SessionPrefs.vkBridge(context) && !maliOpenSelected(context)) return false
         val linux = com.droiddeck.launcher.session.SessionPrefs.linuxDriver(context).ifEmpty { return false }
+        if (maliOpenSelected(context)) return true   // standalone import: no PanVK-* bundle id to match below
         return com.droiddeck.launcher.gpu.DriverPairs.isNonAdreno(com.droiddeck.launcher.gpu.DriverBundle.containing(context, linux, true)?.id)
     }
 

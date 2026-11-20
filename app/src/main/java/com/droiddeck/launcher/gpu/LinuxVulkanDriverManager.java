@@ -79,6 +79,12 @@ public class LinuxVulkanDriverManager {
         return name.isEmpty() ? id : name;
     }
 
+    /** True for a driver imported from a "Mali-open" zip (meta.json name starts with "Mali-open"). */
+    public boolean isMaliOpen(String id) {
+        JSONObject m = readMeta(id);
+        return m != null && m.optString("name", "").startsWith("Mali-open");
+    }
+
     public String getDriverVersion(String id) {
         JSONObject m = readMeta(id);
         return m != null ? m.optString("driverVersion", "") : "";

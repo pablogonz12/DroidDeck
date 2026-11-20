@@ -310,6 +310,8 @@ internal fun SetupPanel(
                                     )
                                 },
                             )
+                            // MaliBridge (default) or Mali-open; not gated on s.vkBridge, which is false while Mali-open is selected
+                            if (!s.adreno && com.droiddeck.launcher.core.DeviceSupport.mali() && !s.sessionRunning) com.droiddeck.launcher.gpu.DriverChoiceRow()
                         }
                         val runtimeCheck: @Composable (Boolean) -> Unit = { divider ->
                             CheckRow(

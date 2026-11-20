@@ -2862,6 +2862,12 @@
     <string name="setup_gpu_bridge_unusable">%1$s cannot use the Mali bridge (it needs a Mali GPU without a system-driver route), so this switch has no effect here.</string>
     <string name="setup_gpu_bridge_on">Mali bridge: on</string>
     <string name="setup_gpu_bridge_detail">%1$s is not an Adreno. The experimental Vulkan bridge is on: the session draws through the phone\'s own driver. Expect bugs; send the session logs.</string>
+    <string name="driver_choice_title">Vulkan driver</string>
+    <string name="driver_choice_malibridge">MaliBridge (default)</string>
+    <string name="driver_choice_mali_open">Mali-open (experimental)</string>
+    <string name="driver_choice_active">Active</string>
+    <string name="driver_choice_no_mali_open">No Mali-open driver is imported, so MaliBridge stays selected. Import a Mali-open zip first (Components > GPU drivers > Import .zip, or malideckctl import-driver).</string>
+    <string name="driver_choice_restart">Applies at the next session start.</string>
     <string name="touch_paste">Paste</string>
     <string name="touch_left_stick">Left stick</string>
     <string name="touch_right_stick">Right stick</string>

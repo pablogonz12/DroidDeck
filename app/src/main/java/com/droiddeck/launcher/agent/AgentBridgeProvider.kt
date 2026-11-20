@@ -95,6 +95,7 @@ class AgentBridgeProvider : ContentProvider() {
             AgentEnv.override(context, request.optString("name")).put("ok", true).put("command", "override")
         }
         "prefs" -> prefs(context, request)
+        "driver" -> AgentDrivers.handle(context, request)
         "glasses" -> glasses(context, request)
         "logs" -> logs(context)
         "access" -> JSONObject().put("ok", true).put("commands", AgentAccess.commandsAllowed(context))
