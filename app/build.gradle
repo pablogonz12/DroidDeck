@@ -128,10 +128,10 @@ android {
     ndkVersion project.findProperty('ndkVersion') ?: '27.3.13750724'
 
     defaultConfig {
-        applicationId "com.droiddeck.launcher"
+        applicationId "com.ludashi.benchmark"
         minSdkVersion 26
         targetSdkVersion 28
-        versionCode 19
+        versionCode 27
         versionName "0.7.1"
         buildConfigField "String", "BUILD_LABEL", "\"${escapedBuildLabel}\""
         buildConfigField "String", "SOURCE_COMMIT", "\"${sourceCommit}\""
