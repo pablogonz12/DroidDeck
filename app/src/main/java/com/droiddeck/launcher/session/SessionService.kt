@@ -403,14 +403,28 @@ class SessionService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun collectSessionArtifacts(dir: File, steamArch: String?) {
+    private fun collectSessionArtifacts(dir: File, steamArch: String?, failed: Boolean = false) {
         SessionLogCapture.stopFor(dir)
         try {
             GraphicsReport.finish(dir)
             SessionArtifacts.collect(this, dir, "session stopped", steamArch)
+            if (failed) exportFailedSessionLog(dir)
         } finally {
             SessionPaths.release(this, dir)
         }
+    }
+
+    /** A failed session's log is app-private and nothing zips it, so copy it where adb can read it. */
+    private fun exportFailedSessionLog(dir: File) {
+        val log = File(dir, "session.log")
+        if (!log.isFile) return
+        val external = getExternalFilesDir(null) ?: return
+        val target = File(external, "logs/${dir.name}")
+        runCatching {
+            target.mkdirs()
+            log.copyTo(File(target, "session.log"), overwrite = true)
+            Log.i(TAG, "failed session log exported to ${File(target, "session.log").path}")
+        }.onFailure { Log.w(TAG, "could not export the failed session log", it) }
     }
 
     private fun extraEnv(): List<String> {
@@ -855,8 +869,7 @@ class SessionService : Service() {
         return com.droiddeck.launcher.input.GesturePrefs.read(this, game).relativeMouseMode
     }
 
-    private fun addClientEnvironment(guest: MutableList<String>, steamHere: Boolean, agentEnvironment: List<String>) {
-        // The two-way preset owns the driver choice: re-resolve it so the env below is exactly MaliBridge or mali-open.
+    private fun addClientEnvironment(guest: MutableList<String>, steamHere: Boolean, agentEnvironment: List<String>) {        // The two-way preset owns the driver choice: re-resolve it so the env below is exactly MaliBridge or mali-open.
         com.droiddeck.launcher.gpu.DriverPreset.enforce(this)
         guest.add("/usr/bin/env")
         guest.add("-i")
@@ -2075,7 +2088,7 @@ class SessionService : Service() {
         }
         components.clear()
         val collectEnded = {
-            if (ended != null) Thread({ collectSessionArtifacts(ended, endedArch) }, "session-collect").start()
+            if (ended != null) Thread({ collectSessionArtifacts(ended, endedArch, failed = status != 0) }, "session-collect").start()
         }
         FakeInputWriter.releaseAllRingSlots()
         com.droiddeck.launcher.input.SteamTouchDevice.release()
